@@ -153,4 +153,4 @@ and free-tier LLMs are rate-limited. Change `ADMIN_PASSWORD` before showing it p
 
 ---
 
-<p align="center"><b>Built with ❤️ by Prajwal Gotkar</b></p>
+<p align="center"><b>Built with ❤️ by Prajwal and Aman</b></p>
