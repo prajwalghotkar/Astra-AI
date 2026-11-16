@@ -55,14 +55,23 @@ Copy the template and edit it:
 # Windows:      copy .env.example .env
 # macOS/Linux:  cp .env.example .env
 ```
-Open `.env` and fill **at least one** key (both = automatic failover, recommended):
+Open `.env` and keep only what you need. **Minimum setup (Groq only):**
 
-| Key | Where to get it (free) |
+```dotenv
+GROQ_API_KEY=gsk_paste_your_key_here
+LLM_PROVIDER=groq
+GROQ_MODEL=llama-3.3-70b-versatile
+ADMIN_PASSWORD=choose-your-own-password
+DEMO_MODE=1
+```
+
+| Key | Meaning |
 |---|---|
-| `GOOGLE_API_KEY` | https://aistudio.google.com/apikey |
-| `GROQ_API_KEY` | https://console.groq.com/keys |
+| `GROQ_API_KEY` | Free key from https://console.groq.com/keys (starts with `gsk_`) |
+| `ADMIN_PASSWORD` | A password **you invent**. It unlocks the Admin login + Command Center |
+| `DEMO_MODE=1` | Shows OTP codes in the app sidebar (needed unless you set up real email) |
 
-Also change `ADMIN_PASSWORD` to your own secret.
+Optional: add `GOOGLE_API_KEY` (https://aistudio.google.com/apikey) and set `LLM_PROVIDER=auto` to get automatic Gemini → Groq failover.
 
 ### 5 · Check everything
 ```bash
@@ -126,6 +135,7 @@ prajwal_gotkar_adk/
 ├── prajwal_ui/                 Streamlit app + the animated universe (universe.py)
 ├── knowledge_base/             markdown files the RAG searches — add your own!
 ├── integrations/telegram_bot.py
+├── vercel_landing/index.html   static landing page for Vercel
 └── tests/                      scripted-LLM end-to-end tests + unit tests + UI smoke tests
 ```
 
@@ -143,9 +153,49 @@ prajwal_gotkar_adk/
 | Port busy | `python -m streamlit run prajwal_ui/app.py --server.port 8600` |
 | Research returns errors | DuckDuckGo/Wikipedia need internet access; check VPN/firewall |
 
-## ☁️ Deploy for free
-`Dockerfile` included. Streamlit Community Cloud, Hugging Face Spaces (Docker) or Render free tier all work —
-set your keys as **secrets / environment variables**, never commit `.env`.
+## ☁️ Deployment (Vercel + where the app really runs)
+
+**Important:** Vercel runs short-lived serverless functions, and it can't host a Streamlit app, which needs
+a long-running Python server. So the setup is **two parts**:
+
+| Part | Where | What |
+|---|---|---|
+| 🌌 Landing page | **Vercel** (`vercel_landing/`) | The animated PRAJWAL/AI universe + a "Launch the app" button |
+| 🤖 The real app | **Render / Hugging Face Spaces / Streamlit Cloud** | Streamlit + agents + database |
+
+### Part 1 · Deploy the app (pick one)
+
+**A) Streamlit Community Cloud** (easiest, free)
+1. Push this folder to a **GitHub repo** (`.env` is git-ignored — never upload it).
+2. Go to https://share.streamlit.io → *New app* → pick the repo → main file: `prajwal_ui/app.py`.
+3. *Advanced settings → Secrets*, paste:
+   ```toml
+   GROQ_API_KEY = "gsk_..."
+   LLM_PROVIDER = "groq"
+   ADMIN_PASSWORD = "your-password"
+   DEMO_MODE = "1"
+   ```
+4. Deploy. You get a URL like `https://your-app.streamlit.app`.
+
+**B) Render** (uses the included `Dockerfile`)
+1. *New → Web Service* → connect the GitHub repo → Runtime: **Docker**.
+2. Add the same variables under *Environment*.
+3. Deploy. The app reads Render's `$PORT` automatically.
+
+**C) Hugging Face Spaces** → *Create Space → SDK: Docker*, upload the files, add the keys under *Settings → Secrets*,
+and set `app_port: 8501` in the Space's README header.
+
+> ⚠️ Free hosts have an **ephemeral disk**: the SQLite demo data (chats, tickets, refunds) resets when the app
+> restarts or sleeps. That is fine for demos. For permanent data you would move to a hosted database.
+
+### Part 2 · Deploy the landing page on Vercel
+1. Open `vercel_landing/index.html` and replace the two placeholders:
+   - `https://YOUR-APP-URL-HERE` → your app URL from Part 1
+   - `https://github.com/YOUR-GITHUB-USERNAME/YOUR-REPO` → your repo link
+2. Push to GitHub, then on https://vercel.com → *Add New → Project* → import the repo.
+3. Set **Root Directory** to `vercel_landing`, Framework Preset **Other**, leave build settings empty → **Deploy**.
+   (Or with the CLI: `cd vercel_landing && npx vercel --prod`.)
+4. Share the Vercel link: visitors see the universe animation and click **LAUNCH THE APP**.
 
 ## ⚖️ Honest notes
 This is a **demo**: refunds never move real money, the demo inbox shows OTPs on screen (set `DEMO_MODE=0` + SMTP for real use),
@@ -153,4 +203,4 @@ and free-tier LLMs are rate-limited. Change `ADMIN_PASSWORD` before showing it p
 
 ---
 
-<p align="center"><b>Built with ❤️ by Prajwal and Aman</b></p>
+<p align="center"><b>Built with ❤️ by Prajwal </b></p>
